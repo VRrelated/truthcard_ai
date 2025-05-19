@@ -1,32 +1,41 @@
-# Welcome to React Router!
+# TruthCard AI
 
-A modern, production-ready template for building full-stack React applications using React Router.
+![TruthCard AI Logo](app/welcome/logo-light.svg)
 
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
+TruthCard AI is a powerful tool that analyzes dating profile screenshots and provides honest feedback through roasts, compatibility metrics, and red flag detection.
 
 ## Features
 
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+- 🔍 **Profile Analysis** - Upload dating profile screenshots for instant analysis
+- 🔥 **Customized Roasts** - Receive honest feedback with varying severity levels
+- 📊 **Compatibility Heatmap** - Visualize compatibility metrics across different dimensions
+- 🚩 **Red Flag Detection** - Identify potential warning signs in dating profiles
+- 📱 **Responsive Design** - Works on desktop and mobile devices
+- 🔄 **Share Results** - Export and share your analysis results
 
 ## Getting Started
 
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
 ### Installation
 
-Install the dependencies:
-
 ```bash
+# Clone the repository
+git clone https://github.com/VRrelated/truthcard_ai.git
+
+# Navigate to the project directory
+cd truthcard_ai
+
+# Install dependencies
 npm install
 ```
 
 ### Development
 
-Start the development server with HMR:
+Start the development server with hot-reload:
 
 ```bash
 npm run dev
@@ -44,44 +53,33 @@ npm run build
 
 ## Deployment
 
-### Docker Deployment
-
-To build and run using Docker:
+Deploy to GitHub Pages:
 
 ```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
+npm run deploy
 ```
 
-The containerized application can be deployed to any platform that supports Docker, including:
+## Technology Stack
 
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
+- **Frontend**: React, TypeScript, Tailwind CSS
+- **Routing**: React Router
+- **Data Storage**: Supabase
+- **PDF Generation**: jsPDF, html2canvas
+- **Build Tool**: Vite
 
-### DIY Deployment
+## Usage Tiers
 
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
+- **Free Tier**: Limited to 3 profile analyses
+- **Roaster Tier**: Unlimited profile analyses with premium features
 
-Make sure to deploy the output of `npm run build`
+## Contributing
 
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Styling
+## License
 
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ---
 
-Built with ❤️ using React Router.
+Built with ❤️ by the TruthCard AI Team
