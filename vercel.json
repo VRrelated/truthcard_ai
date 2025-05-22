@@ -11,42 +11,15 @@
   ],
   "routes": [
     {
+      "src": "/truthcard_ai/(.*)",
+      "dest": "/truthcard_ai/index.html"
+    },
+    {
       "src": "/(.*)",
       "dest": "/index.html"
-    }
-  ]
-}
-
-
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
     }
   ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  "github": {
+    "silent": true
+  }
 }
-- Make sure your React Router is configured correctly for production
-- Verify that your homepage in package.json is set correctly
-- Add a `vercel.json` file to handle SPA routing:
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
