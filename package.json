@@ -12,6 +12,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@react-router/dev": "^7.6.1",
     "@supabase/supabase-js": "^2.49.4",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",

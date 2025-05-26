@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from "jspdf";
 
+// Extend the Window interface to include Razorpay
+declare global {
+    interface Window {
+        Razorpay: any; // Replace 'any' with proper Razorpay types if available
+    }
+}
 // Simulated Data Types (replace with actual types if integrating backend)
 type RoastResult = {
   highlight: string;
@@ -23,6 +29,7 @@ type RedFlag = {
 const TruthCardAI: React.FC = () => {
   const [appState, setAppState] = useState<'onboarding' | 'upload' | 'analyzing' | 'roasting' | 'results' | 'error'>('onboarding');
   const [cringeScore, setCringeScore] = useState<number>(0);
+  const [selectedPlan, setSelectedPlan] = useState<'Free' | 'Roaster'>('Free'); // Assuming 'Roaster' is the paid tier
   const [roastResults, setRoastResults] = useState<RoastResult[]>([]);
   const [redFlags, setRedFlags] = useState<RedFlag[]>([]);
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -36,6 +43,7 @@ const TruthCardAI: React.FC = () => {
   const [heatmapData, setHeatmapData] = useState<HeatmapMetric[]>([]);
   const [isCardShattered, setIsCardShattered] = useState<boolean>(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [paymentStatus, setPaymentStatus] = useState<string>('');
   const [lipSyncing, setLipSyncing] = useState<boolean>(false);
   const [currentTier, setCurrentTier] = useState<'Free' | 'Roaster'>('Free');
   const [uploadCount, setUploadCount] = useState<number>(0);
@@ -66,7 +74,7 @@ const TruthCardAI: React.FC = () => {
       if (locked && new Date(lockoutEnd) > new Date()) {
         setIsLocked(true);
         setLockoutEndDate(lockoutEnd);
-      } else if (date === today) {
+      } else if (date === today && !locked) {
         setUploadCount(count);
         setLastUploadDate(date);
       } else {
@@ -85,7 +93,7 @@ const TruthCardAI: React.FC = () => {
 
   // Handle upload tracking and limits
   const handleUploadLimit = () => {
-    if (currentTier === 'Roaster') return true;
+    if (currentTier === 'Roaster') return true; // No limit for Roaster tier
     
     const today = new Date().toISOString().split('T')[0];
     const newCount = uploadCount + 1;
@@ -117,6 +125,52 @@ const TruthCardAI: React.FC = () => {
     setLastUploadDate(today);
     return true;
   };
+
+  const handleFileChange = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    if (isLocked && currentTier === 'Free') {
+      const lockoutEnd = new Date(lockoutEndDate);
+      alert(`You've reached your daily upload limit. Please upgrade to Roaster or wait until ${lockoutEnd.toLocaleDateString()} to upload more images.`);
+      return;
+    }
+
+    if (currentTier === 'Free' && !handleUploadLimit()) {
+      alert('You have reached your daily upload limit (3 uploads). Please upgrade to Roaster to continue using TruthCard AI.');
+      return;
+    }
+
+    const file = files[0];
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    setFileName(file.name);
+    setIsLoading(true);
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setUploadedImage(reader.result as string);
+      setIsLoading(false);
+      setIsAnalyzing(true);
+      setAppState('analyzing');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handlePayment = async () => {
+    alert("Payment processing simulated. Please implement your Razorpay integration here.");
+    // Example using the triggerRazorpayRoaster function (requires backend setup)
+    // setIsLoading(true);
+    // setPaymentStatus("Initiating payment...");
+    // triggerRazorpayRoaster();
+  };
+
+
+
+
+
 
   // Terminal Typing Effect
   useEffect(() => {
@@ -341,6 +395,7 @@ const TruthCardAI: React.FC = () => {
               setLipSyncing(true);
               setTimeout(() => setLipSyncing(false), 4000);
               setTimeout(() => setShowShareCard(true), 5000);
+
               setTimeout(() => {
                 const supportPopup = document.createElement('div');
                 supportPopup.style.cssText = `
@@ -373,8 +428,8 @@ const TruthCardAI: React.FC = () => {
                     transition: all 0.3s ease;
                   ">Support Us</button>
                 `;
-
-                document.body.appendChild(supportPopup);
+                
+                document.body.appendChild(supportPopup as HTMLElement);
 
                 const supportButton = document.getElementById('supportButton');
                 if (supportButton) {
@@ -388,7 +443,7 @@ const TruthCardAI: React.FC = () => {
                   });
                   supportButton.addEventListener('click', () => {
                     // Replace with actual Gumroad link
-                    window.open('https://vrrelated.gumroad.com/l/attracttherightone', '_blank');
+                     window.open('https://vrrelated.gumroad.com/l/attracttherightone', '_blank');
                   });
                 }
 
@@ -488,7 +543,7 @@ const TruthCardAI: React.FC = () => {
                   ">Support Us</button>
                 `;
 
-                document.body.appendChild(supportPopup);
+                document.body.appendChild(supportPopup as HTMLElement);
 
                 const supportButton = document.getElementById('supportButton');
                 if (supportButton) {
@@ -523,37 +578,6 @@ const TruthCardAI: React.FC = () => {
     }
     return () => clearInterval(interval);
   }, [isAnalyzing, uploadedImage]);
-
-  const handleFileChange = (files: FileList | null) => {
-    if (files && files[0]) {
-      const file = files[0];
-      // Basic image type check
-      if (!file.type.startsWith('image/')) {
-          alert("Error: Please upload an image file.");
-          setAppState('upload');
-          setIsLoading(false);
-          return;
-      }
-      setFileName(file.name);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUploadedImage(reader.result as string);
-        setIsLoading(false);
-        setIsAnalyzing(true);
-        setAppState('analyzing');
-      };
-      reader.onerror = () => {
-        alert("Error reading file.");
-        setAppState('upload');
-        setIsLoading(false);
-      }
-      reader.readAsDataURL(file);
-      setIsLoading(true); // Show loader immediately
-    } else {
-       setAppState('upload');
-       setIsLoading(false);
-    }
-  };
 
   const SupportMessage = () => (
     <div className="mt-8 text-center">
@@ -637,8 +661,8 @@ const TruthCardAI: React.FC = () => {
       }, 1000); // Duration of shatter animation
   };
 
-  const handleDownload = async (format: 'png' | 'jpg' | 'pdf' = 'png') => {
-    const cardElement = document.querySelector('.truth-card-container');
+  const handleDownload = async (format?: 'png' | 'jpg' | 'pdf') => {
+    const cardElement = document.querySelector('.truth-card-container') as HTMLElement | null;
     if (!cardElement) {
       alert('TruthCard not found.');
       return;
@@ -648,7 +672,8 @@ const TruthCardAI: React.FC = () => {
       useCORS: true,
       scale: 2
     });
-    const dataUrl = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png');
+
+    const dataUrl = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0); // Use 1.0 quality for JPEG
     if (format === 'pdf') {
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'px', format: [canvas.width, canvas.height] });
       pdf.addImage(dataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
@@ -720,10 +745,10 @@ const TruthCardAI: React.FC = () => {
     // Set actual cookie here in a real app
   };
 
- const selectPlan = async (plan: 'Free' | 'Roaster') => {
+ const selectPlan = async (plan: 'Free' | 'Roaster', tierPrice: number) => {
     if (plan === 'Roaster') {
       // Dynamically load Razorpay script if not already loaded
-      if (!document.getElementById('razorpay-script')) {
+      if (tierPrice === 9.99 && !document.getElementById('razorpay-script')) { // Only load for the paid tier
         const script = document.createElement('script');
         script.id = 'razorpay-script';
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
@@ -733,14 +758,15 @@ const TruthCardAI: React.FC = () => {
       } else {
         triggerRazorpayRoaster();
       }
-    } else {
+    } else if (plan === 'Free') {
+      setSelectedPlan('Free');
       alert('Switched to Free plan.');
       setCurrentTier('Free');
     }
   };
 
  async function triggerRazorpayRoaster() {
-    // Fetch order details from backend
+    // Fetch order details from backend\n
     let orderData;
     try {
       const response = await fetch('http://localhost:5000/api/create-razorpay-order', {
@@ -748,7 +774,7 @@ const TruthCardAI: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ plan: selectedPlan }),
+        body: JSON.stringify({ plan: 'roaster' }), // Assuming a fixed plan name for backend
       });
       orderData = await response.json();
       if (!response.ok) throw new Error(orderData.error || 'Failed to create order');
@@ -766,8 +792,9 @@ const TruthCardAI: React.FC = () => {
       description: 'Nuclear Roast Plan',
       image: '/favicon.ico',
       order_id: orderData.orderId,
-      handler: function (response) {
+      handler: function (response: any) {
         setPaymentStatus('Payment successful! Transaction ID: ' + response.razorpay_payment_id);
+        setSelectedPlan('Roaster'); // Update state on successful payment
         setCurrentTier('Roaster');
         setIsLoading(false);
       },
@@ -1055,7 +1082,7 @@ const TruthCardAI: React.FC = () => {
                        <button onClick={() => alert('Friend Challenge Sent! (Not really)')} className={`px-6 py-3 bg-lime-600 hover:bg-lime-500 text-black font-bold rounded ${glitchHoverClass} transition-all`}>
                            Challenge a Friend
                        </button>
-                       <button onClick={handleDownload} className={`px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded ${glitchHoverClass} transition-all`}>
+                       <button onClick={() => handleDownload()} className={`px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded ${glitchHoverClass} transition-all`}>
                            Download TruthCard
                        </button>
                        <button onClick={handleRestart} className={`px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white font-bold rounded ${glitchHoverClass} transition-all`}>
@@ -1109,15 +1136,15 @@ const TruthCardAI: React.FC = () => {
                         </ul>
                         <button
                             onClick={() => window.open("https://vrconnect.gumroad.com/l/attractthrightgirl", "_blank")}
-                            disabled={currentTier === 'Pro'}
-                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Pro' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
+                            disabled={currentTier === 'Free'}
+                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Free' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
                          >
-                            {currentTier === 'Pro' ? 'Selected' : 'Select Free Tier'}
+                            {currentTier === 'Free' ? 'Selected' : 'Select Free Tier'}
                          </button>
                     </div>
 
                     {/* Pro Tier */}
-                    <div className={`p-6 rounded-lg border ${currentTier === 'Pro' ? 'border-lime-500 bg-lime-900/20 scale-105' : 'border-gray-700 bg-gray-800/50'} transition-all`}>
+                    <div className={`p-6 rounded-lg border ${currentTier === 'Roaster' ? 'border-lime-500 bg-lime-900/20 scale-105' : 'border-gray-700 bg-gray-800/50'} transition-all`}>
                          <h3 className="text-xl font-semibold text-white mb-2">Pro Roast</h3>
                          <p className={`text-3xl font-bold ${neonLime} mb-4`}>$4.99<span className="text-sm text-gray-400">/roast</span></p>
                          <ul className="text-sm space-y-2 text-gray-300 mb-6">
@@ -1131,10 +1158,10 @@ const TruthCardAI: React.FC = () => {
                          </ul>
                          <button
                             onClick={() => window.open("https://vrconnect.gumroad.com/l/attractthrightgirl", "_blank")}
-                            disabled={currentTier === 'Pro'}
-                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Pro' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
+                            disabled={currentTier === 'Roaster'}
+                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Roaster' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
                          >
-                            {currentTier === 'Pro' ? 'Selected' : 'Select Pro'}
+                            {currentTier === 'Roaster' ? 'Selected' : 'Select Pro'}
                          </button>
                     </div>
 
@@ -1153,10 +1180,10 @@ const TruthCardAI: React.FC = () => {
                          </ul>
                          <button
                             onClick={() => window.open("https://vrconnect.gumroad.com/l/attractthrightgirl", "_blank")}
-                            disabled={currentTier === 'Pro'}
-                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Pro' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
+                            disabled={currentTier === 'Roaster'}
+                            className={`w-full px-4 py-2 rounded font-bold ${currentTier === 'Roaster' ? 'bg-gray-600 cursor-not-allowed' : `bg-lime-600 hover:bg-lime-500 text-black ${glitchHoverClass}`}`}
                          >
-                            {currentTier === 'Pro' ? 'Selected' : 'Select Nuclear Roast'}
+                            {currentTier === 'Roaster' ? 'Selected' : 'Select Nuclear Roast'}
                          </button>
                      </div>
                 </div>
@@ -1166,7 +1193,7 @@ const TruthCardAI: React.FC = () => {
         </div>
 
         {/* CSS Animations (can be moved to a global CSS file in a real app) */}
-        <style jsx global>{`
+        <style>{`
            @keyframes scanlines {
              0% { background-position: 0 0; }
              100% { background-position: 0 100%; }
@@ -1279,80 +1306,11 @@ const TruthCardAI: React.FC = () => {
            .deepguard-blur { /* filter: blur(10px); */ /* Uncomment to test visual */ }
             <p className="text-neon-blue mb-4">We are in development stage. "if you want to support us"</p>
              <p className="text-neon-blue mb-4">Please support by clicking the pricing plans</p>
-        `}</style>
+        `}
+        </style>
     </div>
   );
 };
 
 export default TruthCardAI;
 
-const handleFileChange = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-
-    if (isLocked && currentTier === 'Free') {
-      const lockoutEndDate = new Date(lockoutEndDate);
-      alert(`You've reached your daily upload limit. Please upgrade to Pro or wait until ${lockoutEndDate.toLocaleDateString()} to upload more images.`);
-      return;
-    }
-    
-    if (!handleUploadLimit()) {
-      alert('You have reached your daily upload limit (3 uploads). Please upgrade to Pro to continue using TruthCard AI.');
-      return;
-    }
-
-    const file = files[0];
-    if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file');
-      return;
-    }
-
-    setFileName(file.name);
-    setIsLoading(true);
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setUploadedImage(reader.result as string);
-      setIsLoading(false);
-      setIsAnalyzing(true);
-      setAppState('analyzing');
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handlePayment = async () => {
-  try {
-    // Call your backend (Edge Function) to create a Razorpay order
-    const response = await fetch("/api/create-razorpay-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ amount: 50000 }) // ₹500 in paise
-    });
-    if (!response.ok) throw new Error("Failed to create order");
-    const order = await response.json();
-    const options = {
-      key: "YOUR_RAZORPAY_KEY_ID", // Replace with your Razorpay Key ID
-      amount: order.amount, // Amount in paise
-      currency: order.currency,
-      name: "TruthCard AI",
-      description: "Purchase Pro Tier",
-      order_id: order.id,
-      handler: function (response) {
-        setPaymentStatus('Payment successful! Transaction ID: ' + response.razorpay_payment_id);
-        setCurrentTier('Roaster');
-        setIsLoading(false);
-      },
-      prefill: {
-        email: "",
-        contact: ""
-      },
-      theme: {
-        color: "#ff0055"
-      }
-    };
-    // @ts-ignore
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  } catch (err) {
-    alert("Payment failed: " + (err.message || err));
-  }
-};
